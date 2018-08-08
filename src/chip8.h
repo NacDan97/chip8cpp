@@ -1,3 +1,11 @@
+#define NNN (opcode & 0x0FFF)	//address
+#define KK (opcode & 0x00FF)	//8 bit constant
+#define N (opcode & 0x000F)		//4 bit constant
+
+// #define DX (px * SCALE)
+// #define DY (py * SCALE)
+
+
 class chip8{
 	public:
 		chip8();

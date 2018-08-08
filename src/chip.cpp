@@ -60,24 +60,63 @@ void chip8::init(){
 	delay_timer = 0;
 	sound_timer = 0;
 
-	drawFlag = true;
+	drawFlag = false; //by default no drawing has been done
 }
 
 void chip8::emulateCycle(){
 
 	//fetch opcode
-
 	// std::cout << memory[pc] << std::endl;
 	// std::cout << memory[pc+1] << std::endl;
 
 	opcode = memory[pc] << 8 | memory[pc + 1];
 
 	//decode opcode
-
 	switch(opcode & 0xF000){
 
+		switch(opcode & 0x00F){	//compare the 4 bits
+
+			case 0x0000: //00E0 clear screen
+				for(int i = 0; i < (sizeof(gfx)/sizeof(*gfx)); i++){
+					gfx[i] = 0;
+				}
+
+				drawFlag = true;
+				pc += 2;
+				break;
+
+			case 0x000E: //return from subroutine
+				--sp;
+				pc = stack[sp];
+				pc += 2;
+				break;
+
+			default:
+				std::cout << "Unsupported Opcode!" << std::endl;
+				exit(EXIT_FAILURE);
 
 
+		case 0x1000: //jump to location NNN
+			pc = opcode & NNN;
+			printf("Jumping to %p", pc);
+			break;
+		}
+
+		case 0x2000: //call subroutine at NNN
+			pc = stack[sp];
+			++sp;
+			pc = opcode & NNN;
+			break;
+
+		case 0x3000: //skip next instruction if VX = kk (3XKK)
+
+
+			if(V[(opcode & 0x0F00) >> 8] < KK){ pc += 4; }
+			//2 nybbles is one byte... so shifting to the right 2 nybles (8 bytes) will allow us to compare since V is an unsigned char
+
+			else{ pc +=2; }
+
+			break;
 }
 
 chip8 myChip8;
