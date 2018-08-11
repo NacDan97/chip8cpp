@@ -110,13 +110,92 @@ void chip8::emulateCycle(){
 
 		case 0x3000: //skip next instruction if VX = kk (3XKK)
 
-
-			if(V[(opcode & 0x0F00) >> 8] < KK){ pc += 4; }
+			if(V[(opcode & 0x0F00) >> 8] == KK){ pc += 4; }
 			//2 nybbles is one byte... so shifting to the right 2 nybles (8 bytes) will allow us to compare since V is an unsigned char
-
 			else{ pc +=2; }
-
 			break;
+
+		case 0x4000: //skip next instruction if VX != KK (4XKK)
+			if(V[(opcode & 0x0F00) >> 8] != KK){
+				pc += 4;
+			}
+
+			else{
+				pc += 2;
+			}
+			break;
+
+		case 0x5000: //skip next instruction if VX = VY (5XY0)
+			if(V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4]){ //shift 4 bytes since Y is in the 2nd nybble
+				pc += 4;
+			}
+
+			else{
+				pc += 2;
+			}
+			break;
+
+		case 0x6000: //set VX = KK
+			V[(opcode & 0x0F00) >> 8] = KK;
+			pc += 2;
+			break;
+
+		case 0x7000: //set VX = VX + KK (7XKK)
+			V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x0F00) >> 8] + KK;
+			pc += 2;
+			break;
+
+		case 0x8000:
+			switch(opcode & 0x000F){
+
+				case 0x0000: //set VX = VY (8XY0)
+					V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4];
+					pc += 2;
+					break;
+
+				case 0x0001: //set VX = VX OR VY (8XY1)
+					V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x0F00) >> 8] | V[(opcode & 0x00F0) >> 4];
+					pc += 2;
+					break;
+
+				case 0x0002: //set VX = VX AND VY
+					V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x0F00) >> 8] & V[(opcode & 0x00F0) >> 4];
+					pc += 2;
+					break;
+
+				case 0x0003:
+					V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x0F00) >> 8] ^ V[(opcode & 0x00F0) >> 4];
+					pc += 2;
+					break;
+
+				case 0x0004: //set VX = VX + VY, set VF = carry (8XY4)
+
+					if(V[(opcode & 0x00F0) >> 4] > (0xFF - V[(opcode & 0x0F00) >> 8])){ //subtracting VY > 8 bits - VX would be the same as comparing if VX + VY > 8 bits
+						V[0xF] = 1;
+					}
+
+					else{
+						V[0xF] = 0;
+					}
+
+					V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x0F00) >> 8] + V[(opcode & 0x00F0) >> 4]; //only the lowest 8 bits of the result are kept, and stored in VX
+					pc += 2;
+					break;
+
+				case 0x0005: //set VX = VX - VY, set VF = NOT borrow(8XY5)
+					if(V[(opcode & 0x0F00) >> 8] > V[(opcode & 0x00F0) >> 4]){ //if VVX > VY, then VF is set to 1, otherwise 0
+						V[0xF] = 1;
+					}
+
+					else{
+						V[0xF] = 0;
+					}
+
+					V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x0F00) >> 8] - V[(opcode & 0x00F0) >> 4]; //VY is subtracted from VX, and the results are stored in VX
+					pc += 2;
+					break;
+
+			}
 }
 
 chip8 myChip8;
