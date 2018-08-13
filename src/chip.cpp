@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstdlib>
 #include "chip8.h"
 
 unsigned char fontset[80]{
@@ -183,17 +184,64 @@ void chip8::emulateCycle(){
 					break;
 
 				case 0x0005: //set VX = VX - VY, set VF = NOT borrow(8XY5)
-					if(V[(opcode & 0x0F00) >> 8] > V[(opcode & 0x00F0) >> 4]){ //if VVX > VY, then VF is set to 1, otherwise 0
-						V[0xF] = 1;
+					if(V[(opcode & 0x0F00) >> 8] > V[(opcode & 0x00F0) >> 4]){ //if VX > VY, then VF to 1, otherwise 0
+						V[0xF] = 1; //if there is no borrow, set VF = 1
 					}
 
 					else{
-						V[0xF] = 0;
+						V[0xF] = 0; //otherwise set VF to 0
 					}
 
 					V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x0F00) >> 8] - V[(opcode & 0x00F0) >> 4]; //VY is subtracted from VX, and the results are stored in VX
 					pc += 2;
 					break;
+
+				case 0x0006: //set VX = VX SHR (shift right) 1; VF set to least significant bit of VX (8XY6)
+					V[0xF] = V[(opcode & 0x0F00) >> 8] & 0x1; // When you & VX with the 1 bit (0x1), you get the least significant bit.	
+					V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x0F00) >> 8] >> 1;
+					pc += 2;
+					break; 
+
+				case 0x0007: //set VX = VY - VX, set VF = NOT borrow (8XY7)
+					if(V[(opcode & 0x00F0) >> 4] > V[(opcode & 0x0F00) >> 8]){ //if VY > VX, then set VF to 1, otherwise 0
+						V[0xF] = 1; //if there is no borrow set VF to 1
+					}
+
+					else{
+						V[0xF] = 0; //otherwise set VF to 0
+					}
+
+					V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4] - V[(opcode & 0x0F00) >> 8]; //VX = VY - VF
+					pc += 2;
+					break;
+
+				case 0x000E: //set VX = VX SHL (shift left) 1 (8XYE)
+					V[0xF] = V[(opcode & 0x0F00) >> 8] >> 7; //store most significant bit of VX in VF
+					V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x0F00) >> 8] << 1; //shift VX left one bit 
+					pc += 2;
+					break;
+
+			case 0x9000: //skip next instruction if VX != VY (9XY0)
+				if(V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4]){
+					pc += 4;
+				}
+
+				else{
+					pc += 2;
+				}
+				break;
+
+			case 0xA000: //set I = NNN (ANNN)
+				I = NNN;
+				pc += 2;
+				break;
+
+			case 0xB000: //pc = NNN + V0 (BNNN)
+				pc = NNN + V[0];
+				break;
+
+			// case 0xC000: //VX = random byte AND KK
+			// 	V[(opcode & 0x0F00) >> 8] = 
 
 			}
 }
