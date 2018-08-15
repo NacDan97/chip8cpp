@@ -95,13 +95,14 @@ void chip8::emulateCycle(){
 			default:
 				std::cout << "Unsupported Opcode!" << std::endl;
 				exit(EXIT_FAILURE);
+		}
+		break;
 
 
 		case 0x1000: //jump to location NNN
 			pc = opcode & NNN;
 			printf("Jumping to %p", pc);
 			break;
-		}
 
 		case 0x2000: //call subroutine at NNN
 			pc = stack[sp];
@@ -220,30 +221,87 @@ void chip8::emulateCycle(){
 					V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x0F00) >> 8] << 1; //shift VX left one bit 
 					pc += 2;
 					break;
+			}
+			break;
 
-			case 0x9000: //skip next instruction if VX != VY (9XY0)
-				if(V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4]){
-					pc += 4;
-				}
+		case 0x9000: //skip next instruction if VX != VY (9XY0)
+			if(V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4]){
+				pc += 4;
+			}
 
-				else{
-					pc += 2;
-				}
-				break;
-
-			case 0xA000: //set I = NNN (ANNN)
-				I = NNN;
+			else{
 				pc += 2;
-				break;
+			}
+			break;
 
-			case 0xB000: //pc = NNN + V0 (BNNN)
-				pc = NNN + V[0];
-				break;
+		case 0xA000: //set I = NNN (ANNN)
+			I = NNN;
+			pc += 2;
+			break;
 
-			// case 0xC000: //VX = random byte AND KK
-			// 	V[(opcode & 0x0F00) >> 8] = 
+		case 0xB000: //pc = NNN + V0 (BNNN)
+			pc = NNN + V[0];
+			break;
+
+		case 0xC000: //VX = random byte (between 0 to 255) AND KK
+			V[(opcode & 0x0F00) >> 8] = (std::rand() % (0xFF + 1)) & KK; //range from  0 to 255 (0xFF)
+			pc += 2;
+			break;
+
+		case 0xD000: //draw sprite at (VX, VY) that has width of 8 pixels and height of N pixels. (DXYN)
+		{
+			//TODO: give short but detailed explanation what's going on just so that I will remember
+			unsigned short x = V[(opcode & 0x0F00) >> 8];
+			unsigned short y = V[(opcode & 0x00F0) >> 4];
+			unsigned short height = opcode & 0x000F;
+			unsigned short pixel;
+
+			V[0xF] = 0;
+			for(int yline = 0; yline < height; yline++){
+				pixel = memory[I + yline];
+				for(int xline = 0; xline < 8; xline++){
+					if(pixel & (0x80 >> xline) != 0){
+						if(gfx[(x + xline) + (y + yline) * 64] == 1){
+							V[0xF] = 1;
+							gfx[(x + xline) + (y + yline) * 64] ^= 1;
+						}
+					}
+				}
+			}
+			drawFlag = true;
+			pc += 2;
+		}
+			break;
+
+		case 0xE000:
+			switch(opcode & 0x00FF){
+
+				case 0x009E:
+
+					pc += 2;
+					break;
+
+				case 0x00A1:
+
+					pc += 2;
+					break;
+
+
+
+
+
+
 
 			}
+			break;
+
+
+
+
+
+
+
+
 }
 
 chip8 myChip8;
