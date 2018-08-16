@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstdlib>
+#include <cstdio>
 #include "chip8.h"
 
 unsigned char fontset[80]{
@@ -101,7 +102,7 @@ void chip8::emulateCycle(){
 
 		case 0x1000: //jump to location NNN
 			pc = opcode & NNN;
-			printf("Jumping to %p", pc);
+			std::printf("Jumping to %p", pc);
 			break;
 
 		case 0x2000: //call subroutine at NNN
@@ -276,31 +277,83 @@ void chip8::emulateCycle(){
 		case 0xE000:
 			switch(opcode & 0x00FF){
 
-				case 0x009E:
+				case 0x009E: //skips next instruction if key stored in VX is pressed (0xEX9E)
+					if(key[V[(opcode & 0x0F00) >> 8]] == 1){
+						pc += 4;
+					}
 
-					pc += 2;
+					else{
+						pc += 2;
+					}
 					break;
 
-				case 0x00A1:
+				case 0x00A1: //skips next instruction if the key stored in VX isn't pressed (0xEXA1)
+					if(key[V[(opcode & 0x0F00) >> 8]] == 0){
+						pc += 4;
+					}
 
-					pc += 2;
+					else{
+						pc += 2;
+					}
 					break;
-
-
-
-
-
-
-
 			}
 			break;
 
+		case 0xF000:
+			switch(opcode & 0x00FF){
+
+				case 0x0007: //sets VX to the value of the delay timer
+					V[(opcode & 0x0F00) >> 8] = delay_timer;
+					pc += 2;
+					break;
+
+				case 0x000A: //a key press is awaited, and then stored in VX
+
+					for(int i = 0; i < key.size(); i++){
+						if(key[i] == 1){
+							V[(opcode & 0x00F0) >> 8] = i;
+							pc += 2;
+							break;
+						}
+					}
+					// TODO : define macro for VX and others
+					std::printf("awaiting key press to be stored in V[%x]", (opcode & 0x0F00) >> 8 );
+					break;
 
 
+				case 0x0015: //set delay timer to VX
+					delay_timer = V[(opcode & 0x0F00) >> 8];
+					pc += 2;
+					break;
 
+				case 0x0018: //set the sound timer to VX
+					sound_timer = V[(opcode & 0x0F00) >> 8];
+					pc += 2;
+					break;
 
+				case 0x001E: //set I = I + VX
+					I = I + V[(opcode & 0x0F00) >> 8];
+					pc += 2;
+					break;
 
+				case 0x0029: 							//sets I to the location of the sprite for character VX
+					I = V[(opcode & 0x0F00) >> 8] * 5;	//characters set from hex 0 - 5 are represented in 4x5 font
+					pc += 2;
+					break;
 
+				case 0x0033:
+					pc += 2;
+					break;
+
+				case 0x0055:
+					pc += 2;
+					break;
+
+				case 0x0065:
+					pc += 2;
+					break;
+			}
+			break;
 
 }
 
